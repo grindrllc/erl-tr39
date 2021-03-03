@@ -54,7 +54,7 @@ make_map(Lines) -> make_map(Lines, #{}).
 make_map([], Acc) -> Acc;
 make_map([Line | Rest], Acc) ->
     [C1, C2 | _] = binary:split(Line, <<";">>, [global, trim_all]),
-    Key = unicode:characters_to_nfd_list([binary_to_integer(string:trim(C1), 16)]),
+    Key = binary_to_integer(string:trim(C1), 16),
     Val = base16lits(C2),
     Acc2 = case Acc of
         #{Key := {Val, Ls}} ->
@@ -70,7 +70,7 @@ make_clauses(It) -> make_clauses(It, []).
 make_clauses(none, Acc) -> lists:reverse(Acc);
 make_clauses({K, {V, Lines}, It}, Acc) ->
     Comments = [[$%, $ , Line, $\n] || Line <- Lines],
-    Res = [Comments, io_lib:format("p(~w) -> ~s;~n", [K, V])],
+    Res = [Comments, io_lib:format("p(16#~.16b) -> ~s;~n", [K, V])],
     make_clauses(maps:next(It), [Res | Acc]).
 
 base16lits(Codes) ->
@@ -93,10 +93,7 @@ preamble() ->
 confusable(S1, S2) ->
     skeleton(S1) =:= skeleton(S2).
 
-skeleton(S) ->
-    %NFD = unicode:characters_to_nfd_list(S),
-    %Prototypes = [p(Char) || Char <- NFD],
-    nfd([p(nfd(Char)) || Char <- S]).
+skeleton(S) -> nfd([p(Char) || Char <- S]).
 
 nfd(Char) when is_integer(Char) -> unicode:characters_to_nfd_list([Char]);
 nfd(Lst) when is_list(Lst) -> unicode:characters_to_nfd_list(Lst).
