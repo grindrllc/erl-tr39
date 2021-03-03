@@ -32,9 +32,12 @@ process(Bin0) ->
     Clauses = make_clauses(maps:next(maps:iterator(Mapping))),
     LastClause = "p(C) -> C.\n",
 
-    TestCase = test_case(make_pairs(Lines2)),
-    OutBin = iolist_to_binary([preamble(), Clauses, LastClause, TestCase]),
+    OutBin = iolist_to_binary([preamble(), Clauses, LastClause]),
     file:write_file("src/tr39.erl", OutBin),
+
+    TestCase = test_case(make_pairs(Lines2)),
+    TestOutBin = iolist_to_binary([test_preamble(), TestCase]),
+    file:write_file("test/tr39_test.erl", TestOutBin),
     ok.
 
 is_not_comment_or_empty(<<>>) -> false;
@@ -86,10 +89,6 @@ preamble() ->
 -module(tr39).
 -export([skeleton/1, confusable/2]).
 
--ifdef(TEST).
--include_lib(\"eunit/include/eunit.hrl\").
--endif.
-
 confusable(S1, S2) ->
     skeleton(S1) =:= skeleton(S2).
 
@@ -102,25 +101,32 @@ nfd(Lst) when is_list(Lst) -> unicode:characters_to_nfd_list(Lst).
 
 ".
 
+test_preamble() ->
+"
+%% coding: utf-8
+-module(tr39_test).
+-include_lib(\"eunit/include/eunit.hrl\").
+
+".
+
 test_case(Pairs) ->
     Prologue =
 "
--ifdef(TEST).
 basic_confusable_test() ->
     Latin = \"scope\",
     Cyrillic = \"ѕсоре\",
     ?assert(Latin =/= Cyrillic),
     ?assert(unicode:characters_to_nfd_list(Latin) =/= unicode:characters_to_nfd_list(Cyrillic)),
-    ?assert(confusable(Latin, Cyrillic)).
+    ?assert(tr39:confusable(Latin, Cyrillic)).
+
 ",
 
     AllCharsAssertions0 = [make_assertion(C1, C2) || {C1, C2} <- Pairs],
     AllCharsAssertions = string:join(AllCharsAssertions0, ",\n"),
 
     AllChars = ["all_chars_confusable_test() ->\n", AllCharsAssertions, "."],
-    Epilogue = "\n-endif.\n",
 
-    unicode:characters_to_binary([Prologue, AllChars, Epilogue]).
+    unicode:characters_to_binary([Prologue, AllChars]).
 
 make_assertion(C1, C2) ->
     io_lib:format("    ?assert(confusable(~w, ~w))", [[C1], C2]).
