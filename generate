@@ -129,4 +129,4 @@ basic_confusable_test() ->
     unicode:characters_to_binary([Prologue, AllChars]).
 
 make_assertion(C1, C2) ->
-    io_lib:format("    ?assert(confusable(~w, ~w))", [[C1], C2]).
+    io_lib:format("    true = tr39:confusable(~w, ~w)", [[C1], C2]).
