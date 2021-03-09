@@ -30,10 +30,9 @@ process(Bin0) ->
 
     Mapping = make_map(Lines2),
     Clauses = make_clauses(maps:next(maps:iterator(Mapping))),
-    FirstClause = "p(<<>>, Acc) -> Acc;\n",
-    LastClause = "p(<<H/utf8, T/binary>>, Acc) -> p(T, <<Acc/binary, H/utf8>>).\n",
+    LastClause = "p(C) -> [C].\n",
 
-    OutBin = iolist_to_binary([preamble(), FirstClause, Clauses, LastClause]),
+    OutBin = iolist_to_binary([preamble(), Clauses, LastClause]),
     file:write_file("src/tr39.erl", OutBin),
 
     TestCase = test_case(make_pairs(Lines2)),
@@ -74,18 +73,15 @@ make_clauses(It) -> make_clauses(It, []).
 make_clauses(none, Acc) -> lists:reverse(Acc);
 make_clauses({K, {V, Lines}, It}, Acc) ->
     Comments = [[$%, $ , Line, $\n] || Line <- Lines],
-    Fmt = "p(<<16#~.16b/utf8, T/binary>>, Acc) -> p(T, <<Acc/binary, ~s>>);~n",
+    Fmt = "p(16#~.16b) -> ~s;~n",
     Clause = io_lib:format(Fmt, [K, V]),
     Res = [Comments, Clause],
     make_clauses(maps:next(It), [Res | Acc]).
 
 base16lits(Codes) ->
     Split = binary:split(Codes, [<<" ">>, <<"\t">>], [global, trim_all]),
-    Bins = [<<"16#", C/binary, "/utf8">> || C <- Split],
-    case length(Bins) of
-        1 -> Bins;
-        _ -> [lists:join(", ", Bins)]
-    end.
+    Bins = [<<"16#", C/binary>> || C <- Split],
+    [$[, lists:join(", ", Bins), $]].
 
 preamble() ->
 "%% coding: utf-8
@@ -95,7 +91,7 @@ preamble() ->
 confusable(S1, S2) ->
     skeleton(S1) =:= skeleton(S2).
 
-skeleton(S) -> nfd(p(S, <<>>)).
+skeleton(S) -> nfd(<< <<Protos/utf8>> || <<C/utf8>> <= S, Protos <- p(C) >>).
 
 nfd(Bin) when is_binary(Bin) -> unicode:characters_to_nfd_binary(Bin).
 
