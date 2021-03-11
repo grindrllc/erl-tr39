@@ -12,7 +12,6 @@ basic_confusable_test() ->
     ?assert(tr39:confusable(Latin, Cyrillic)).
 
 all_chars_confusable_test() ->
-    true = tr39:confusable(<<225,191,182>>, <<225,143,175>>),
     true = tr39:confusable(<<214,173>>, <<214,150>>),
     true = tr39:confusable(<<214,174>>, <<214,152>>),
     true = tr39:confusable(<<214,168>>, <<214,153>>),
