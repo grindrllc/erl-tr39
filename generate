@@ -20,7 +20,7 @@ main([]) ->
     ok = process(Bin, "tr39").
 
 usage() ->
-    io:format("Usage: ./generate [/path/to/confusables.txt] [module_name]").
+    io:format("Usage: ./generate [/path/to/confusables.txt module_name]").
 
 process(Bin0, ModuleName) ->
     {utf8, Len} = unicode:bom_to_encoding(Bin0),
@@ -28,11 +28,9 @@ process(Bin0, ModuleName) ->
     Lines = binary:split(Bin, <<"\n">>, [global]),
     Lines2 = lists:filter(fun is_not_comment_or_empty/1, Lines),
 
-    Mapping = make_map(Lines2),
-    Clauses = make_clauses(maps:next(maps:iterator(Mapping))),
-    LastClause = "p(C) -> C.\n",
+    Clauses = make_clauses(Lines2),
 
-    OutBin = iolist_to_binary([preamble(ModuleName), Clauses, LastClause]),
+    OutBin = iolist_to_binary([preamble(ModuleName), Clauses]),
     ModFileName = io_lib:format("src/~s.erl", [ModuleName]),
     file:write_file(ModFileName, OutBin),
 
@@ -55,38 +53,20 @@ make_pairs([Line | Rest], Acc) ->
     C2 = [binary_to_integer(Hex, 16) || Hex <- C2Glyphs],
     make_pairs(Rest, [{C1, C2} | Acc]).
 
-make_map(Lines) -> make_map(Lines, #{}).
-make_map([], Acc) -> Acc;
-make_map([Line | Rest], Acc) ->
+make_clauses(Lines) -> make_clauses(Lines, []).
+make_clauses([], Acc) -> lists:reverse(["p(C) -> C.\n" | Acc]);
+make_clauses([Line | Rest], Acc) ->
     [C1, C2 | _] = binary:split(Line, <<";">>, [global, trim_all]),
-    Key = binary_to_integer(string:trim(C1), 16),
-    Val = base16lits(C2),
-    Acc2 = case Acc of
-        #{Key := {Val, Ls}} ->
-            Acc#{Key => {Val, Ls ++ [Line]}};
-        #{Key := {Val2, _}} ->
-            exit({duplicate_detected, Key, Val, Val2});
-        _ ->
-            Acc#{Key => {Val, [Line]}}
+    Source = binary_to_integer(string:trim(C1), 16),
+    TargetCPs = binary:split(C2, [<<" ">>, <<"\t">>], [global, trim_all]),
+    Target = case [<<"16#", CP/binary>> || CP <- TargetCPs] of
+        Res = [_] -> Res;
+        Res -> [$[, lists:join(", ", Res), $]]
     end,
-    make_map(Rest, Acc2).
-
-make_clauses(It) -> make_clauses(It, []).
-make_clauses(none, Acc) -> lists:reverse(Acc);
-make_clauses({K, {V, Lines}, It}, Acc) ->
-    Comments = [[$%, $ , Line, $\n] || Line <- Lines],
     Fmt = "p(16#~.16b) -> ~s;~n",
-    Clause = io_lib:format(Fmt, [K, V]),
-    Res = [Comments, Clause],
-    make_clauses(maps:next(It), [Res | Acc]).
-
-base16lits(Codes) ->
-    Split = binary:split(Codes, [<<" ">>, <<"\t">>], [global, trim_all]),
-    Bins = [<<"16#", C/binary>> || C <- Split],
-    case Bins of
-        [_] -> Bins;
-        _ -> [$[, lists:join(", ", Bins), $]]
-    end.
+    Clause = io_lib:format(Fmt, [Source, Target]),
+    Comment = ["% ", Line],
+    make_clauses(Rest, [[Comment, "\n", Clause] | Acc]).
 
 preamble(ModuleName) ->
 ["%% coding: utf-8
@@ -138,3 +118,4 @@ make_assertion(C1, C2, ModuleName) ->
     Actual = <<C1/utf8>>,
     Expected = unicode:characters_to_binary(C2),
     io_lib:format("    true = ~s:confusable(~w, ~w)", [ModuleName, Actual, Expected]).
+
