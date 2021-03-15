@@ -1,0 +1,78 @@
+#+TITLE: tr39
+
+A module for determining whether two strings are visually confusable.
+
+Examples:
+
+- "paypal" is visually confusable with "𝔭𝒶ỿ𝕡𝕒ℓ", "ρ⍺у𝓅𝒂ן", "𝔭𝒶ỿ𝕡𝕒ℓ", and
+  more. According to [[https://util.unicode.org/UnicodeJsps/confusables.jsp?a=paypal&r=None][this handy tool]], there are over 1 billion visually
+  confusable spellings of "paypal"
+- "scope", spelled with latin characters is visually confusable with "ѕсоре",
+  spelled with Cyrillic characters.
+
+* FAQ
+** How does it work?
+
+The escript =priv/generate= generates the =src/tr39.erl= file, using a
+'confusables.txt' file as input.
+
+** What unicode encodings/representations are supported?
+
+Two representations of Unicode strings are supported; Erlang lists of integer
+literals, and binaries encoded with UTF-8.
+
+** Why don't you do NFD conversion before calling p/1?
+
+Using the Erlang standard library functions for NFD conversion,
+=unicode:characters_to_nfd_list/1= and =unicode:characters_to_binary/1=, I
+noticed that 30 characters no longer map to their 'prototype' characters when
+normalizet to NFD. Here's a table:
+
+#+begin_src
+1ce	ǎ
+1cd	Ǎ
+227	ȧ
+226	Ȧ
+11b	ě
+11a	Ě
+1e7	ǧ
+1e6	Ǧ
+1f5	ǵ
+1d0	ǐ
+1cf	Ǐ
+146	ņ
+1d2	ǒ
+1d1	Ǒ
+150	Ő
+1a1	ơ
+1a0	Ơ
+21a	Ț
+163	ţ
+21b	ț
+1d4	ǔ
+1d3	Ǔ
+1e43	ṃ
+1f7d	ώ
+419	Й
+45d	ѝ
+f6	ö
+114bc	𑒼
+114be	𑒾
+1ff6	ῶ
+#+end_src
+
+You can generate your own table like this with the =src/nfd_false_negatives=
+escript.
+
+* Welcome contributions
+
+If anyone is interested, we would gratefully accept contributions. Here are a
+couple of ideas that might make for good contributions:
+
+- A short-circuiting implementation of confusable/2. confusable/2 is not
+  particularly effecient. It is possible to return =false= once two characters
+  in the =skeleton/1='d strings do not compare equal.
+- Calling =unicode_util:nfd/1= on each grapheme in the input strings and
+  directly generating the skeleton strings would likely be more efficient than
+  allocating separate NFD-normalized strings before generating the skeleton
+  strings. It may also add support for iolists, which would be a nice bonus.
