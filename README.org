@@ -61,7 +61,7 @@ f6	ö
 1ff6	ῶ
 #+end_src
 
-You can generate your own table like this with the =src/nfd_false_negatives=
+You can generate your own table like this with the =priv/nfd_false_negatives=
 escript.
 
 * Welcome contributions
