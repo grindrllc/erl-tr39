@@ -11,6 +11,11 @@ basic_confusable_test() ->
     ?assert(unicode:characters_to_nfd_list(Latin) =/= unicode:characters_to_nfd_list(Cyrillic)),
     ?assert(tr39:confusable(Latin, Cyrillic)).
 
+prototypes_as_binary_test() ->
+    Expected = <<16#1172/utf8, 16#1165/utf8, 16#4E28/utf8>>,
+    Actual = tr39:prototypes_as_binary(<<16#1190/utf8>>),
+    ?assert(Actual =:= Expected).
+
 all_chars_confusable_test() ->
     true = tr39:confusable(<<214,173>>, <<214,150>>),
     true = tr39:confusable(<<214,174>>, <<214,152>>),
