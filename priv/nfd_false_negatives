@@ -1,0 +1,26 @@
+#!/usr/bin/env escript
+
+-mode(compile).
+
+usage() ->
+    io:format("Usage: ./nfd_false_negatives /path/to/tr39/ebin /path/to/confusables.txt~n"),
+    halt(1).
+
+main([Path, File]) ->
+    case {filelib:is_dir(Path), filelib:is_regular(File)} of
+        {true, true} -> ok;
+        _ -> usage()
+    end,
+    code:add_patha(filename:absname(Path)),
+    {module, tr39} = code:ensure_loaded(tr39),
+    Cmd = io_lib:format("grep -o '( .' ~s| tr -d '( \n'", [File]),
+    Lst0 = os:cmd(Cmd),
+    FalseNegatives = lists:filter(fun(C) ->
+        not tr39:confusable([C], unicode:characters_to_nfd_list([C]))
+    end, Lst0),
+    io:format("Of the ~b confusable characters,", [length(Lst0)]),
+    io:format(" ~b are no longer 'confusable' after NFD conversion:~n",
+      [length(FalseNegatives)]),
+    [io:format("~.16b\t~s~n", [C, <<C/utf8>>]) || C <- FalseNegatives];
+
+main(_) -> usage().
