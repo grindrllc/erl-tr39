@@ -9,31 +9,39 @@
     prototype/1
 ]).
 
--type s() :: unicode:unicode_binary() | string().
-
--spec confusable(s(), s()) -> boolean().
+-spec confusable(unicode:chardata(), unicode:chardata()) -> boolean().
 
 confusable(S1, S2) -> skeleton(S1) =:= skeleton(S2).
 
--spec skeleton(s()) -> string().
+-spec skeleton(unicode:chardata()) -> string().
 
-skeleton(S) when is_binary(S) orelse is_list(S) ->
-    unicode:characters_to_nfd_list(prototypes(S)).
+skeleton(CD) ->
+    skeleton(CD, []).
+skeleton(CD, Acc) ->
+    case unicode_util:gc(CD) of
+        [GC|Str] ->
+            Proto = case prototype(GC) of
+                L when is_list(L) -> L;
+                N -> [N]
+            end,
+            skeleton(Str, lists:reverse(unicode:characters_to_nfd_list(Proto), Acc));
+        [] -> lists:reverse(Acc);
+        {error, Error} -> {error, lists:reverse(Acc), Error}
+    end.
 
--spec skeleton_as_binary(s()) -> unicode:unicode_binary().
+-spec skeleton_as_binary(unicode:chardata()) -> unicode:unicode_binary().
 
-skeleton_as_binary(S) when is_binary(S) orelse is_list(S) ->
-    unicode:characters_to_nfd_binary(prototypes(S)).
+skeleton_as_binary(S) ->
+    unicode:characters_to_binary(skeleton(S)).
 
--spec prototypes(s()) -> [char() | [char()]].
+-spec prototypes(unicode:unicode_binary() | string()) -> [char() | [char()]].
 
 prototypes(B) when is_binary(B) ->
     [prototype(Char) || <<Char/utf8>> <= B];
 prototypes(S) when is_list(S) ->
     [prototype(Char) || Char <- S].
 
-
--spec prototypes_as_binary(s()) -> unicode:unicode_binary().
+-spec prototypes_as_binary(unicode:unicode_binary() | string()) -> unicode:unicode_binary().
 
 prototypes_as_binary(B) when is_binary(B) ->
     << (bytes(prototype(Char))) || <<Char/utf8>> <= B>>;
