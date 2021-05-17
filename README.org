@@ -72,7 +72,3 @@ couple of ideas that might make for good contributions:
 - A short-circuiting implementation of confusable/2. confusable/2 is not
   particularly effecient. It is possible to return =false= once two characters
   in the =skeleton/1='d strings do not compare equal.
-- Calling =unicode_util:nfd/1= on each grapheme in the input strings and
-  directly generating the skeleton strings would likely be more efficient than
-  allocating separate NFD-normalized strings before generating the skeleton
-  strings. It may also add support for iolists, which would be a nice bonus.
