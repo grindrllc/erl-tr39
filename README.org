@@ -18,8 +18,11 @@ The escript =priv/generate= generates the =src/tr39.erl= file, using a
 
 ** What unicode encodings/representations are supported?
 
-Two representations of Unicode strings are supported; Erlang lists of integer
-literals, and binaries encoded with UTF-8.
+tr39 supports the =unicode:chardata()= type, which seems to be equal to iolists
+comprised of either:
+
+- Erlang integers corresponding to Unicode codepoints
+- UTF-8 encoded binaries.
 
 ** Why don't you do NFD conversion before calling p/1?
 
