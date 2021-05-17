@@ -26,7 +26,7 @@ literals, and binaries encoded with UTF-8.
 Using the Erlang standard library functions for NFD conversion,
 =unicode:characters_to_nfd_list/1= and =unicode:characters_to_binary/1=, I
 noticed that 30 characters no longer map to their 'prototype' characters when
-normalizet to NFD. Here's a table:
+normalized to NFD. Here's a table:
 
 #+begin_src
 1ce	ǎ
