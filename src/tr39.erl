@@ -18,7 +18,7 @@ confusable(S1, S2) -> skeleton(S1) =:= skeleton(S2).
 skeleton(CD) ->
     skeleton(CD, []).
 skeleton(CD, Acc) ->
-    case unicode_util:gc(CD) of
+    case string:next_grapheme(CD) of
         [GC|Str] ->
             Proto = case prototype(GC) of
                 L when is_list(L) -> L;
